@@ -3,7 +3,7 @@
   "id": "sky-fade",
   "version": "${version}",
   "name": "Sky Fade",
-  "description": "Terrain at the edge of the render distance fades into the sky that is actually behind it, instead of into one flat fog colour. The normal fog (also when another mod such as Atmospherics changes its colour or distance) is applied first, and the fade to the sky starts from that. For Sodium; does nothing while an Iris shader pack is active. Based on the fog override of Chunks Fade In by kerudion.",
+  "description": "Terrain at the edge of the render distance fades into the sky that is actually behind it, instead of into one flat fog colour. The normal fog (also when another mod such as Atmospherics changes its colour or distance) is applied first, and the fade to the sky starts from that. For Sodium; pauses while an Iris shader pack is in use or Voxy is rendering. Based on the fog override of Chunks Fade In by kerudion.",
   "authors": ["Hiveko"],
   "contributors": ["kerudion (Chunks Fade In, the original fog override)"],
   "license": "GPL-3.0-only",

@@ -19,32 +19,64 @@ import org.slf4j.LoggerFactory;
  * <p>The idea is the "fog override" of Chunks Fade In by kerudion (GPLv3). That one replaces the fog
  * colour with the sky from the start of the render distance fog on, also for the normal fog that is
  * already there at that distance, so the colour jumps when another mod uses a strong fog colour.
+ *
+ * <p>The fade is paused ({@link #active()}) while an Iris shader pack is in use and while Voxy is
+ * rendering; the terrain shader then does exactly what Sodium's does.
  */
 public class SkyFade implements ClientModInitializer {
     public static final String MOD_ID = "sky-fade";
     public static final Logger LOGGER = LoggerFactory.getLogger("Sky Fade");
 
-    private static final long SHADER_PACK_CHECK_MS = 500;
+    private static final long CHECK_MS = 500;
+    private static long checkedAt;
+    private static boolean active = true;
+    private static boolean shaderPack;
+
     private static boolean irisChecked;
     private static Object irisApi;
     private static Method irisPackInUse;
-    private static boolean shaderPackInUse;
-    private static long shaderPackCheckedAt;
+
+    private static boolean voxyChecked;
+    private static Object voxyConfig;
+    private static Method voxyRendering;
 
     @Override
     public void onInitializeClient() {
         if (SodiumCheck.matches()) {
-            LOGGER.info("Sky Fade active (Sodium {})", SodiumCheck.installed());
+            LOGGER.info("Sky Fade active (Sodium {}); it pauses while a shader pack is in use or Voxy is rendering",
+                    SodiumCheck.installed());
         } else {
             LOGGER.warn("Sky Fade off: made for Sodium {}, found {}", SodiumCheck.expected(), SodiumCheck.installed());
         }
     }
 
-    /** True while an Iris shader pack is in use: the shader pack draws the terrain, Sky Fade does nothing. */
-    public static boolean shaderPackInUse() {
+    /**
+     * True when the fade should be drawn: not while an Iris shader pack is in use (the shader pack draws
+     * the terrain) and not while Voxy is rendering (its distant terrain continues behind the edge of the
+     * world, so there is no sky to fade into). Checked again every {@value #CHECK_MS} ms, so switching
+     * shaders or Voxy on and off in game is picked up.
+     */
+    public static boolean active() {
+        refresh();
+        return active;
+    }
+
+    /** True while an Iris shader pack is in use: Sodium's terrain shader is not the one drawing then. */
+    public static boolean shaderPack() {
+        refresh();
+        return shaderPack;
+    }
+
+    private static void refresh() {
         long now = System.currentTimeMillis();
-        if (now - shaderPackCheckedAt < SHADER_PACK_CHECK_MS) return shaderPackInUse;
-        shaderPackCheckedAt = now;
+        if (now - checkedAt >= CHECK_MS) {
+            checkedAt = now;
+            shaderPack = shaderPackInUse();
+            active = !shaderPack && !voxyRendering();
+        }
+    }
+
+    private static boolean shaderPackInUse() {
         if (!irisChecked) {
             irisChecked = true;
             if (FabricLoader.getInstance().isModLoaded("iris")) {
@@ -57,15 +89,33 @@ public class SkyFade implements ClientModInitializer {
                 }
             }
         }
-        boolean inUse = false;
-        if (irisPackInUse != null) {
-            try {
-                inUse = (Boolean) irisPackInUse.invoke(irisApi);
-            } catch (ReflectiveOperationException | RuntimeException e) {
-                inUse = false;
+        if (irisPackInUse == null) return false;
+        try {
+            return (Boolean) irisPackInUse.invoke(irisApi);
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            return false;
+        }
+    }
+
+    private static boolean voxyRendering() {
+        if (!voxyChecked) {
+            voxyChecked = true;
+            if (FabricLoader.getInstance().isModLoaded("voxy")) {
+                try {
+                    Class<?> config = Class.forName("me.cortex.voxy.client.config.VoxyConfig");
+                    voxyConfig = config.getField("CONFIG").get(null);
+                    voxyRendering = config.getMethod("isRenderingEnabled");
+                } catch (ReflectiveOperationException | LinkageError e) {
+                    LOGGER.warn("Could not reach Voxy's settings; Sky Fade stays off while Voxy is installed", e);
+                }
             }
         }
-        shaderPackInUse = inUse;
-        return inUse;
+        if (!FabricLoader.getInstance().isModLoaded("voxy")) return false;
+        if (voxyRendering == null || voxyConfig == null) return true;
+        try {
+            return (Boolean) voxyRendering.invoke(voxyConfig);
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            return true;
+        }
     }
 }

@@ -30,7 +30,7 @@ public abstract class LevelRendererMixin {
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/client/renderer/LevelRenderer;addMainPass(Lcom/mojang/blaze3d/framegraph/FrameGraphBuilder;Lnet/minecraft/client/renderer/feature/FeatureRenderDispatcher$PreparedFrame;Lcom/mojang/renderpearl/api/buffers/GpuBufferSlice;Lnet/minecraft/client/renderer/chunk/ChunkSectionsToRender;Z)V"))
     private void skyFade$copySky(CallbackInfo ci, @Local FrameGraphBuilder frame) {
-        if (SkyFade.shaderPackInUse()) return;
+        if (!SkyFade.active()) return;
         FramePass pass = frame.addPass("sky_fade_copy_sky");
         this.targets.main = pass.readsAndWrites(this.targets.main);
         ResourceHandle<RenderTarget> main = this.targets.main;

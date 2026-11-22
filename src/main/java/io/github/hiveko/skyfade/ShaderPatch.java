@@ -12,6 +12,9 @@ import java.util.regex.Pattern;
  * it was, including a {@code fog.glsl} replaced by a resource pack. Then the render distance fog, as a
  * fade from that result towards the sky picture ({@value #SAMPLER}) at this pixel. Before the render
  * distance fog starts, the result is exactly Sodium's.
+ *
+ * <p>While the fade is paused, a 1x1 texture is bound instead of the sky; the shader sees that from the
+ * texture size and uses Sodium's original line.
  */
 public final class ShaderPatch {
     /** Name of the sky texture in the shader and in Sodium's terrain bind group. */
@@ -26,6 +29,10 @@ public final class ShaderPatch {
             "uniform sampler2D " + SAMPLER + "; // Sky Fade: the sky as drawn this frame, before the terrain\n";
 
     private static final String FADE = String.join("\n",
+            "    // Sky Fade paused (a 1x1 texture is bound): Sodium's own fog",
+            "    if (textureSize(" + SAMPLER + ", 0).x <= 1) {",
+            "        return _linearFog(color, v_FragDistance, fogColor, u_EnvironmentFog, u_RenderFog, factor);",
+            "    }",
             "    // Sky Fade: the normal fog as before (render distance fog left out), then fade from that into the sky",
             "    vec4 sf_color = _linearFog(color, v_FragDistance, fogColor, u_EnvironmentFog, vec2(1.0e30, 2.0e30), factor);",
             "#ifdef USE_FOG",

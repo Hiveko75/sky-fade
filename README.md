@@ -8,9 +8,11 @@ into one flat fog colour.
 - Across the render distance fog, the result then fades into the sky at the same place on screen:
   sky colour, sunset, haze, stars, whatever was drawn there.
 - Closer than the render distance fog, nothing changes.
+- It pauses while an Iris shader pack is in use and while Voxy is rendering (Voxy's distant terrain
+  continues behind the edge, so there is no sky to fade into).  Switching either off in game turns
+  the fade back on.
 
-Client-side Fabric mod for [Sodium](https://modrinth.com/mod/sodium). It does nothing while an Iris
-shader pack is active (the shader pack draws the terrain then).
+Client-side Fabric mod for [Sodium](https://modrinth.com/mod/sodium).
 
 ## Supported versions
 

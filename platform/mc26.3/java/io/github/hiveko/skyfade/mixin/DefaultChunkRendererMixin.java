@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Hands the sky texture to the terrain shader each time Sodium draws a terrain layer. */
+/** Hands the sky texture (or, while the fade is paused, a 1x1 texture) to the terrain shader for each terrain layer. */
 @Mixin(value = DefaultChunkRenderer.class, remap = false)
 public abstract class DefaultChunkRendererMixin {
     @Inject(method = "render",
@@ -23,8 +23,9 @@ public abstract class DefaultChunkRendererMixin {
                     shift = At.Shift.AFTER,
                     ordinal = 0))
     private void skyFade$bindSky(CallbackInfo ci, @Local(argsOnly = true) RenderPass pass) {
-        if (SkyFade.shaderPackInUse()) return;
-        GpuTextureView sky = SkyTexture.view();
+        if (SkyFade.shaderPack()) return;
+        GpuTextureView sky = SkyFade.active() ? SkyTexture.view() : null;
+        if (sky == null) sky = SkyTexture.paused();
         if (sky != null) {
             pass.setUniform(ShaderPatch.SAMPLER, sky, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
         }

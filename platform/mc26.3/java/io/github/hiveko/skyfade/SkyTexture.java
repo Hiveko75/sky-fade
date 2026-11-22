@@ -15,6 +15,7 @@ import net.minecraft.client.Minecraft;
 public final class SkyTexture {
     private static TextureTarget target;
     private static GpuFormat format;
+    private static TextureTarget pausedTarget;
 
     private SkyTexture() {}
 
@@ -44,6 +45,19 @@ public final class SkyTexture {
             }
         }
         return target == null ? null : target.getColorTextureView();
+    }
+
+    /** A 1x1 texture: bound while the fade is paused, which the shader recognises by its size. */
+    public static GpuTextureView paused() {
+        if (pausedTarget == null) {
+            try {
+                pausedTarget = new TextureTarget("Sky Fade paused", 1, 1, GpuFormat.RGBA8_UNORM, null);
+            } catch (RuntimeException e) {
+                fail(e);
+                return null;
+            }
+        }
+        return pausedTarget.getColorTextureView();
     }
 
     private static GpuTexture ensure(int width, int height, GpuFormat wanted) {
