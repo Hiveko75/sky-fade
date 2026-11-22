@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: ['26.3']
+        target: ['26.3', '26.2', '26.1.2', '1.21.11', '1.21.1']
     steps:
       - uses: actions/checkout@v4
       - name: Setup JDK 21 and 25
@@ -30,11 +30,29 @@ jobs:
       - name: Build for Minecraft ${{ matrix.target }}
         run: |
           chmod +x ./gradlew
-          ./gradlew build -Pmc=${{ matrix.target }} --stacktrace
+          case "${{ matrix.target }}" in
+            1.21.*) ./gradlew -p mc${{ matrix.target }} build --stacktrace; dir=mc${{ matrix.target }}/build/libs ;;
+            *)      ./gradlew build -Pmc=${{ matrix.target }} --stacktrace; dir=build/libs ;;
+          esac
           mkdir -p dist
-          cp build/libs/*+mc${{ matrix.target }}.jar dist/
+          cp $dir/*+mc${{ matrix.target }}.jar dist/
           ls -l dist
       - uses: actions/upload-artifact@v4
         with:
-          name: sky-fade-${{ matrix.target }}
+          name: jar-${{ matrix.target }}
+          path: dist/*.jar
+
+  collect:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: jar-*
+          merge-multiple: true
+          path: dist
+      - run: ls -l dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sky-fade
           path: dist/*.jar

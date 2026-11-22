@@ -8,14 +8,13 @@ import com.mojang.renderpearl.api.textures.GpuTextureView;
 import io.github.hiveko.skyfade.ShaderPatch;
 import io.github.hiveko.skyfade.SkyFade;
 import io.github.hiveko.skyfade.SkyTexture;
-import net.caffeinemc.mods.sodium.client.render.chunk.DefaultChunkRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /** Hands the sky texture (or, while the fade is paused, a 1x1 texture) to the terrain shader for each terrain layer. */
-@Mixin(value = DefaultChunkRenderer.class, remap = false)
+@Mixin(targets = "net.caffeinemc.mods.sodium.client.render.chunk.DefaultChunkRenderer", remap = false)
 public abstract class DefaultChunkRendererMixin {
     @Inject(method = "render",
             at = @At(value = "INVOKE",
@@ -24,7 +23,7 @@ public abstract class DefaultChunkRendererMixin {
                     ordinal = 0))
     private void skyFade$bindSky(CallbackInfo ci, @Local(argsOnly = true) RenderPass pass) {
         if (SkyFade.shaderPack()) return;
-        GpuTextureView sky = SkyFade.active() ? SkyTexture.view() : null;
+        GpuTextureView sky = SkyFade.skyReady() ? SkyTexture.view() : null;
         if (sky == null) sky = SkyTexture.paused();
         if (sky != null) {
             pass.setUniform(ShaderPatch.SAMPLER, sky, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));

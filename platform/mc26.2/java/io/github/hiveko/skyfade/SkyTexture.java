@@ -1,0 +1,73 @@
+package io.github.hiveko.skyfade;
+
+import com.mojang.blaze3d.pipeline.TextureTarget;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.GpuFormat;
+import com.mojang.blaze3d.textures.GpuTexture;
+import com.mojang.blaze3d.textures.GpuTextureView;
+
+/**
+ * The copy of the sky: a texture with the size and format of the game's main colour buffer, filled
+ * once per frame right after the sky was drawn ({@link #copyFrom}) and read by Sodium's terrain shader.
+ */
+public final class SkyTexture {
+    private static TextureTarget target;
+    private static GpuFormat format;
+    private static TextureTarget pausedTarget;
+
+    private SkyTexture() {}
+
+    /** Copies the colour buffer (which holds only the sky at this point of the frame) into the sky texture. */
+    public static void copyFrom(GpuTexture source) {
+        if (source == null || source.isClosed()) return;
+        try {
+            GpuTexture sky = ensure(source.getWidth(0), source.getHeight(0), source.getFormat());
+            if (sky == null) return;
+            RenderSystem.getDevice().createCommandEncoder()
+                    .copyTextureToTexture(source, sky, 0, 0, 0, 0, 0, source.getWidth(0), source.getHeight(0));
+            SkyFade.skyCopied();
+        } catch (RuntimeException e) {
+            fail(e);
+        }
+    }
+
+    /** The sky texture for the terrain shader, or null if the sky has not been copied yet. */
+    public static GpuTextureView view() {
+        return target == null ? null : target.getColorTextureView();
+    }
+
+    /** A 1x1 texture: bound while the fade is paused, which the shader recognises by its size. */
+    public static GpuTextureView paused() {
+        if (pausedTarget == null) {
+            try {
+                pausedTarget = new TextureTarget("Sky Fade paused", 1, 1, false, GpuFormat.RGBA8_UNORM);
+            } catch (RuntimeException e) {
+                fail(e);
+                return null;
+            }
+        }
+        return pausedTarget.getColorTextureView();
+    }
+
+    private static GpuTexture ensure(int width, int height, GpuFormat wanted) {
+        if (width <= 0 || height <= 0) return null;
+        if (target != null && (target.width != width || target.height != height || format != wanted)) {
+            target.destroyBuffers();
+            target = null;
+        }
+        if (target == null) {
+            target = new TextureTarget("Sky Fade sky copy", width, height, false, wanted);
+            format = wanted;
+        }
+        return target.getColorTexture();
+    }
+
+    private static boolean failed;
+
+    private static void fail(RuntimeException e) {
+        if (!failed) {
+            failed = true;
+            SkyFade.LOGGER.error("Could not copy the sky for Sky Fade; the edge of the world may show a wrong colour", e);
+        }
+    }
+}

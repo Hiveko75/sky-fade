@@ -16,12 +16,22 @@ Client-side Fabric mod for [Sodium](https://modrinth.com/mod/sodium).
 
 ## Supported versions
 
+One jar per Minecraft version; each works with these Sodium versions (pre-releases in between included):
+
 | Minecraft | Sodium |
 |---|---|
-| 26.3 | 0.9.3-beta.1 |
+| 26.3 | 0.9.2 – 0.9.3 |
+| 26.2 | 0.9.0 – 0.9.2 |
+| 26.1.2 | 0.8.12 – 0.9.2 |
+| 1.21.11 | 0.8.12 – 0.8.15-beta.1 |
+| 1.21 – 1.21.1 | 0.8.12 – 0.8.13 |
 
-The mod hooks into Sodium's terrain renderer and shader, which change between Sodium versions. With a
-Sodium version a jar was not made for, the mod stays off and writes one line to the log.
+The mod hooks into Sodium's terrain renderer and shader, which change between Sodium versions. Each jar
+lists the exact Sodium versions it was checked against (`sky-fade.versions.properties`); with any other
+Sodium version the mod stays off and writes one line to the log.
+
+On Minecraft 1.21.1 the game has a single fog (no separate render distance fog), so there the fog
+keeps its strength and its colour becomes the sky behind it.
 
 ## Credit
 
@@ -33,7 +43,8 @@ it into the sky, and does only that.
 
 ## Building
 
-`./gradlew build -Pmc=26.3` (JDK 25). The jar is in `build/libs`.
+26.x: `./gradlew build -Pmc=26.3` (or `26.2`, `26.1.2`; JDK 25), jar in `build/libs`.
+1.21.x: `./gradlew -p mc1.21.11 build` (or `mc1.21.1`; JDK 21), jar in `mc1.21.11/build/libs`.
 
 ## License
 

@@ -1,12 +1,10 @@
 package io.github.hiveko.skyfade;
 
-import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.renderpearl.api.GpuFormat;
 import com.mojang.renderpearl.api.textures.GpuTexture;
 import com.mojang.renderpearl.api.textures.GpuTextureView;
-import net.minecraft.client.Minecraft;
 
 /**
  * The copy of the sky: a texture with the size and format of the game's main colour buffer, filled
@@ -27,23 +25,14 @@ public final class SkyTexture {
             if (sky == null) return;
             RenderSystem.getDevice().createCommandEncoder()
                     .copyTextureToTexture(source, sky, 0, 0, 0, 0, 0, source.getWidth(0), source.getHeight(0));
+            SkyFade.skyCopied();
         } catch (RuntimeException e) {
             fail(e);
         }
     }
 
-    /** The sky texture for the terrain shader; created with the main buffer's size if there is none yet. */
+    /** The sky texture for the terrain shader, or null if the sky has not been copied yet. */
     public static GpuTextureView view() {
-        if (target == null) {
-            RenderTarget main = Minecraft.getInstance().gameRenderer.mainRenderTarget();
-            GpuTexture color = main == null ? null : main.getColorTexture();
-            if (color == null) return null;
-            try {
-                ensure(color.getWidth(0), color.getHeight(0), color.getFormat());
-            } catch (RuntimeException e) {
-                fail(e);
-            }
-        }
         return target == null ? null : target.getColorTextureView();
     }
 

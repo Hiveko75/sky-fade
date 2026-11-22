@@ -67,6 +67,19 @@ public class SkyFade implements ClientModInitializer {
         return shaderPack;
     }
 
+    private static final long STALE_NANOS = 1_000_000_000L;
+    private static long skyCopiedAt;
+
+    /** Called each time the sky was copied. */
+    public static void skyCopied() {
+        skyCopiedAt = System.nanoTime();
+    }
+
+    /** True when the fade is on and there is a sky picture from within the last second to fade into. */
+    public static boolean skyReady() {
+        return active() && skyCopiedAt != 0 && System.nanoTime() - skyCopiedAt < STALE_NANOS;
+    }
+
     private static void refresh() {
         long now = System.currentTimeMillis();
         if (now - checkedAt >= CHECK_MS) {

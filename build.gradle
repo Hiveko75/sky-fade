@@ -15,26 +15,14 @@ base {
 
 sourceSets.main {
     java.srcDirs += ["platform/mc${mc}/java"]
+    if (v.gl == 'true') java.srcDirs += ['platform/gl/java']
     resources.srcDirs += ["platform/mc${mc}/resources"]
-}
-
-repositories {
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = 'Modrinth'
-                url = 'https://api.modrinth.com/maven'
-            }
-        }
-        filter { includeGroup 'maven.modrinth' }
-    }
 }
 
 dependencies {
     minecraft "com.mojang:minecraft:${v.minecraft_version}"
     implementation "net.fabricmc:fabric-loader:${v.loader_version}"
-    // Sodium is needed to compile the hooks into its terrain renderer; it is not bundled.
-    compileOnly(v.sodium)
+    // Sodium is not needed to compile: its classes are hooked by name.
 }
 
 processResources {

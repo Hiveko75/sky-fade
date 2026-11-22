@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "io.github.hiveko.skyfade.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "plugin": "io.github.hiveko.skyfade.MixinPlugin",
+  "client": [
+    "LevelRendererMixin",
+    "gl.DefaultShaderInterfaceMixin",
+    "gl.ShaderLoaderMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
