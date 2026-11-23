@@ -3,6 +3,8 @@ package io.github.hiveko.skyfade;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import io.github.hiveko.skyfade.config.SkyFadeConfig;
+
 /**
  * The change to Sodium's terrain fragment shader (blocks/block_layer_opaque.fsh).
  *
@@ -19,6 +21,11 @@ import java.util.regex.Pattern;
  *
  * <p>While the fade is paused, a 1x1 texture is bound instead of the sky; the shader sees that from the
  * texture size and uses Sodium's original line.
+ *
+ * <p>The fade width setting ({@link SkyFadeConfig#fadeWidth()}, blocks) is written into the shader as a
+ * number: the fade then starts that far before the end of the render distance fog instead of where the
+ * game's render distance fog starts. With a single fog (1.21.1) it can only start earlier, never later,
+ * so water, lava and other close fogs are not weakened.
  */
 public final class ShaderPatch {
     /** Name of the sky texture in the shader. */
@@ -84,7 +91,7 @@ public final class ShaderPatch {
                 in + "    // Sky Fade: the normal fog as before (render distance fog left out), then fade from that into the sky",
                 in + "    vec4 sf_color = _linearFog(" + String.join(", ", color, distance, fogColor, environmentFog, "vec2(1.0e30, 2.0e30)", fade) + ");",
                 "#ifdef USE_FOG",
-                in + "    float sf_edge = linear_fog_value(" + distance + ".x, " + renderFog + ".x, " + renderFog + ".y);",
+                in + "    float sf_edge = linear_fog_value(" + distance + ".x, " + start(renderFog + ".x", renderFog + ".y", false) + ", " + renderFog + ".y);",
                 in + "    if (sf_edge > 0.0) {",
                 in + "        vec3 sf_sky = texelFetch(" + SAMPLER + ", ivec2(gl_FragCoord.xy), 0).rgb;",
                 "#ifdef OIT_ACCUMULATE",
@@ -105,7 +112,15 @@ public final class ShaderPatch {
                 in + "if (textureSize(" + SAMPLER + ", 0).x > 1) {",
                 in + "    sf_fog.rgb = texelFetch(" + SAMPLER + ", ivec2(gl_FragCoord.xy), 0).rgb;",
                 in + "}",
-                in + set + "_linearFog(" + String.join(", ", color, distance, "sf_fog", fogStart, fogEnd) + ");");
+                in + set + "_linearFog(" + String.join(", ", color, distance, "sf_fog", start(fogStart, fogEnd, true), fogEnd) + ");");
+    }
+
+    /** Where the fade starts: the game's own start, or the set width before the end. */
+    private static String start(String gameStart, String end, boolean onlyEarlier) {
+        int width = SkyFadeConfig.fadeWidth();
+        if (width <= 0) return gameStart;
+        String set = "max(0.0, " + end + " - " + width + ".0)";
+        return onlyEarlier ? "min(" + gameStart + ", " + set + ")" : set;
     }
 
     private static String unexpected(String source) {

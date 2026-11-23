@@ -14,6 +14,16 @@ into one flat fog colour.
 
 Client-side Fabric mod for [Sodium](https://modrinth.com/mod/sodium).
 
+## Settings
+
+**Fade width** (Mod Menu → Sky Fade → Configure, or `fade_width` in `config/sky-fade.properties`): how
+far before the edge of the render distance the fade into the sky starts, from 1 to 16 chunks, or
+**Game default** (a tenth of the render distance, 4 to 64 blocks: the game's own render distance fog).
+A wider fade hides the edge more softly. The width is built into Sodium's terrain shader, so Done
+reloads the resources once when it changed. On Minecraft 1.21.1 (one fog for everything) a width can
+only make the fog start earlier, never later, so water and lava fog stay as they are. Mod Menu is
+optional.
+
 ## Supported versions
 
 One jar per Minecraft version; each works with these Sodium versions (pre-releases in between included):

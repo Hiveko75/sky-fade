@@ -9,7 +9,8 @@
   "license": "GPL-3.0-only",
   "environment": "client",
   "entrypoints": {
-    "client": ["io.github.hiveko.skyfade.SkyFade"]
+    "client": ["io.github.hiveko.skyfade.SkyFade"],
+    "modmenu": ["io.github.hiveko.skyfade.config.ModMenuIntegration"]
   },
   "mixins": [
     {

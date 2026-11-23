@@ -13,6 +13,14 @@ base {
     archivesName = project.archives_base_name
 }
 
+repositories {
+    maven {
+        name = 'Modrinth'
+        url = 'https://api.modrinth.com/maven'
+        content { includeGroup 'maven.modrinth' }
+    }
+}
+
 sourceSets.main {
     java.srcDirs += ["platform/mc${mc}/java"]
     if (v.gl == 'true') java.srcDirs += ['platform/gl/java']
@@ -23,6 +31,7 @@ dependencies {
     minecraft "com.mojang:minecraft:${v.minecraft_version}"
     implementation "net.fabricmc:fabric-loader:${v.loader_version}"
     // Sodium is not needed to compile: its classes are hooked by name.
+    compileOnly(v.modmenu) { transitive = false }
 }
 
 processResources {
