@@ -46,7 +46,7 @@ public class SkyFadeScreen extends Screen {
     public void onClose() {
         int after = chunks * 16;
         Minecraft mc = Minecraft.getInstance();
-        mc.setScreen(parent);
+        ScreenSwitch.open(parent);
         if (after != before) {
             SkyFadeConfig.setFadeWidth(after);
             mc.reloadResourcePacks();
