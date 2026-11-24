@@ -9,6 +9,8 @@ on:
 
 permissions:
   contents: read
+  id-token: write
+  attestations: write
 
 jobs:
   build:
@@ -42,6 +44,12 @@ jobs:
           name: jar-${{ matrix.target }}
           path: dist/*.jar
           retention-days: 14
+
+      - name: Attest build provenance
+        if: github.event_name != 'pull_request'
+        uses: actions/attest@v4
+        with:
+          subject-path: 'dist/*.jar'
 
   collect:
     needs: build
