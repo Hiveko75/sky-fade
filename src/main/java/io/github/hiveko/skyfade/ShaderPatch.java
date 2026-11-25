@@ -19,6 +19,9 @@ import io.github.hiveko.skyfade.config.SkyFadeConfig;
  * <p>Older versions (Minecraft 1.21.1) have a single fog with one start and end. There the fog keeps
  * its strength and only its colour becomes the sky at this pixel.
  *
+ * <p>The sky is read without its stars (the darkest of five nearby pixels), so faded terrain does not show
+ * stars through it.
+ *
  * <p>While the fade is paused, a 1x1 texture is bound instead of the sky; the shader sees that from the
  * texture size and uses Sodium's original line.
  *
@@ -40,8 +43,21 @@ public final class ShaderPatch {
     private static final Pattern FOG_ONE = Pattern.compile(
             "([ \\t]*)(return\\s+|fragColor\\s*=\\s*)_linearFog\\(" + ARG + "," + ARG + "," + ARG + "," + ARG + "," + ARG + "\\)\\s*;");
 
-    private static final String DECLARATION =
-            "uniform sampler2D " + SAMPLER + "; // Sky Fade: the sky as drawn this frame, before the terrain\n";
+    private static final String DECLARATION = String.join("\n",
+            "uniform sampler2D " + SAMPLER + "; // Sky Fade: the sky as drawn this frame, before the terrain",
+            "// Sky Fade: the sky behind this pixel without the stars. Stars are small bright dots, so the darkest of",
+            "// five samples a few pixels apart (more on bigger screens) leaves only the smooth sky colour.",
+            "vec3 sf_skyAt(ivec2 p) {",
+            "    ivec2 sf_max = textureSize(" + SAMPLER + ", 0) - 1;",
+            "    int d = max(2, sf_max.y / 240);",
+            "    vec3 c = texelFetch(" + SAMPLER + ", clamp(p, ivec2(0), sf_max), 0).rgb;",
+            "    c = min(c, texelFetch(" + SAMPLER + ", clamp(p + ivec2(d, 0), ivec2(0), sf_max), 0).rgb);",
+            "    c = min(c, texelFetch(" + SAMPLER + ", clamp(p - ivec2(d, 0), ivec2(0), sf_max), 0).rgb);",
+            "    c = min(c, texelFetch(" + SAMPLER + ", clamp(p + ivec2(0, d), ivec2(0), sf_max), 0).rgb);",
+            "    c = min(c, texelFetch(" + SAMPLER + ", clamp(p - ivec2(0, d), ivec2(0), sf_max), 0).rgb);",
+            "    return c;",
+            "}",
+            "");
 
     private static boolean warned;
 
@@ -93,7 +109,7 @@ public final class ShaderPatch {
                 "#ifdef USE_FOG",
                 in + "    float sf_edge = linear_fog_value(" + distance + ".x, " + start(renderFog + ".x", renderFog + ".y", false) + ", " + renderFog + ".y);",
                 in + "    if (sf_edge > 0.0) {",
-                in + "        vec3 sf_sky = texelFetch(" + SAMPLER + ", ivec2(gl_FragCoord.xy), 0).rgb;",
+                in + "        vec3 sf_sky = sf_skyAt(ivec2(gl_FragCoord.xy));",
                 "#ifdef OIT_ACCUMULATE",
                 in + "        sf_sky *= " + color + ".a;",
                 "#endif",
@@ -106,13 +122,14 @@ public final class ShaderPatch {
 
     private static String oneFog(String in, String set, String color, String distance, String fogColor,
                                  String fogStart, String fogEnd) {
+        String start = start(fogStart, fogEnd, true);
         return String.join("\n",
                 in + "// Sky Fade: the fog as before, but towards the sky at this pixel (not while a 1x1 texture is bound)",
                 in + "vec4 sf_fog = " + fogColor + ";",
-                in + "if (textureSize(" + SAMPLER + ", 0).x > 1) {",
-                in + "    sf_fog.rgb = texelFetch(" + SAMPLER + ", ivec2(gl_FragCoord.xy), 0).rgb;",
+                in + "if (textureSize(" + SAMPLER + ", 0).x > 1 && " + distance + " > " + start + ") {",
+                in + "    sf_fog.rgb = sf_skyAt(ivec2(gl_FragCoord.xy));",
                 in + "}",
-                in + set + "_linearFog(" + String.join(", ", color, distance, "sf_fog", start(fogStart, fogEnd, true), fogEnd) + ");");
+                in + set + "_linearFog(" + String.join(", ", color, distance, "sf_fog", start, fogEnd) + ");");
     }
 
     /** Where the fade starts: the game's own start, or the set width before the end. */

@@ -6,7 +6,8 @@ into one flat fog colour.
 - The normal fog is applied first, exactly as the game or another mod (for example Atmospherics) set
   its colour and distance.
 - Across the render distance fog, the result then fades into the sky at the same place on screen:
-  sky colour, sunset, haze, stars, whatever was drawn there.
+  sky colour, sunset, haze, clouds. Stars are left out (the sky is read a few pixels around, darkest
+  wins), so they don't shine through faded terrain.
 - Closer than the render distance fog, nothing changes.
 - It pauses while an Iris shader pack is in use and while Voxy is rendering (Voxy's distant terrain
   continues behind the edge, so there is no sky to fade into).  Switching either off in game turns
@@ -17,7 +18,8 @@ Client-side Fabric mod for [Sodium](https://modrinth.com/mod/sodium).
 ## Settings
 
 **Fade width** (Mod Menu → Sky Fade → Configure, or `fade_width` in `config/sky-fade.properties`): how
-far before the edge of the render distance the fade into the sky starts, from 1 to 16 chunks, or
+far before the edge of the render distance the fade into the sky starts, from half a chunk to 4 chunks
+(8 to 64 blocks, in half-chunk steps), or
 **Game default** (a tenth of the render distance, 4 to 64 blocks: the game's own render distance fog).
 A wider fade hides the edge more softly. The width is built into Sodium's terrain shader, so Done
 reloads the resources once when it changed. On Minecraft 1.21.1 (one fog for everything) a width can

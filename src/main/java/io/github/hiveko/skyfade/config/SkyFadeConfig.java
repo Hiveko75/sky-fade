@@ -16,11 +16,13 @@ import net.fabricmc.loader.api.FabricLoader;
  *
  * <p>{@code fade_width}: how many blocks before the edge of the render distance the fade into the sky
  * starts. 0 means the game's own render distance fog, which is a tenth of the render distance, between
- * 4 and 64 blocks. The value is built into Sodium's terrain shader, so a change counts after the
+ * 4 and 64 blocks. At most 64 blocks (4 chunks). The value is built into Sodium's terrain shader, so a change counts after the
  * shaders are made again (a resource reload, done by the settings screen).
  */
 public final class SkyFadeConfig {
-    public static final int MAX_CHUNKS = 16;
+    /** The widest fade: 4 chunks. The slider goes in half chunks (8 blocks). */
+    public static final int MAX_BLOCKS = 64;
+    public static final int STEP_BLOCKS = 8;
     private static final String FILE = "sky-fade.properties";
     private static int fadeWidth = -1;
 
@@ -33,7 +35,7 @@ public final class SkyFadeConfig {
     }
 
     public static void setFadeWidth(int blocks) {
-        fadeWidth = Math.max(0, Math.min(MAX_CHUNKS * 16, blocks));
+        fadeWidth = Math.max(0, Math.min(MAX_BLOCKS, blocks));
         save();
     }
 
@@ -48,7 +50,7 @@ public final class SkyFadeConfig {
         Properties props = new Properties();
         try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
             props.load(reader);
-            fadeWidth = Math.max(0, Math.min(MAX_CHUNKS * 16, Integer.parseInt(props.getProperty("fade_width", "0").trim())));
+            fadeWidth = Math.max(0, Math.min(MAX_BLOCKS, Integer.parseInt(props.getProperty("fade_width", "0").trim())));
         } catch (IOException | NumberFormatException e) {
             SkyFade.LOGGER.warn("Could not read {} ({}); using the game's own fade width", file, e.toString());
         }
@@ -61,7 +63,7 @@ public final class SkyFadeConfig {
         try {
             Files.createDirectories(file.getParent());
             try (Writer writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-                props.store(writer, "Sky Fade. fade_width: blocks before the edge of the render distance where the fade into the sky starts (0 = the game's own: a tenth of the render distance, 4 to 64 blocks)");
+                props.store(writer, "Sky Fade. fade_width: blocks before the edge of the render distance where the fade into the sky starts (0 = the game's own: a tenth of the render distance, 4 to 64 blocks; at most 64)");
             }
         } catch (IOException e) {
             SkyFade.LOGGER.warn("Could not save {} ({})", file, e.toString());
